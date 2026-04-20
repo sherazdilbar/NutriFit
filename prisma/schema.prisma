@@ -1,0 +1,189 @@
+// This is your Prisma schema file for NutriFit
+// Based on the UML class diagram
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model from UML diagram
+model User {
+  id            Int             @id @default(autoincrement()) @map("user_id")
+  name          String
+  email         String          @unique
+  passwordHash  String          @map("password_hash")
+  role          String          @default("user")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  healthProfile HealthProfile?
+  mealLogs      MealLog[]
+  exerciseLogs  ExerciseLog[]
+  dietPlans     DietPlan[]
+  workoutPlans  WorkoutPlan[]
+  goals         Goal[]
+  waterIntake   WaterIntake[]
+  favorites     Favorite[]
+  
+  @@map("users")
+}
+
+// HealthProfile model from UML diagram
+model HealthProfile {
+  id            Int      @id @default(autoincrement()) @map("profile_id")
+  userId        Int      @unique @map("user_id")
+  age           Int?
+  weight        Float?
+  height        Float?
+  gender        String?  @default("male") // 'male' or 'female'
+  activityLevel String?  @default("moderate") @map("activity_level") // 'sedentary', 'light', 'moderate', 'active', 'very_active'
+  healthGoals   String?  @default("maintain") @map("health_goals") // 'lose', 'maintain', 'gain'
+  permissions   String?
+  diseases      String?  // Stored as JSON string
+  allergens     String?  // Stored as JSON string
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("health_profiles")
+}
+
+// Goal model for tracking user goals
+model Goal {
+  id              Int      @id @default(autoincrement()) @map("goal_id")
+  userId          Int      @map("user_id")
+  goalType        String   @map("goal_type") // 'weight', 'calories', 'workouts'
+  targetValue     Float    @map("target_value")
+  currentValue    Float?   @map("current_value")
+  startValue      Float?   @map("start_value")
+  deadline        DateTime?
+  status          String   @default("active") // 'active', 'completed', 'cancelled'
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, status])
+  @@map("goals")
+}
+
+// DietPlan model from UML diagram
+model DietPlan {
+  id        Int      @id @default(autoincrement()) @map("plan_id")
+  userId    Int      @map("user_id")
+  meals     String   // Stored as JSON string (list)
+  calories  Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("diet_plans")
+}
+
+// WorkoutPlan model from UML diagram
+model WorkoutPlan {
+  id        Int      @id @default(autoincrement()) @map("plan_id")
+  userId    Int      @map("user_id")
+  exercises String   // Stored as JSON string (list)
+  intensity String?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("workout_plans")
+}
+
+// MealLog model from UML diagram
+model MealLog {
+  id        Int      @id @default(autoincrement()) @map("log_id")
+  userId    Int      @map("user_id")
+  date      DateTime @default(now())
+  meals     String   // Stored as JSON string (list)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, date])
+  @@map("meal_logs")
+}
+
+// ExerciseLog model from UML diagram
+model ExerciseLog {
+  id        Int      @id @default(autoincrement()) @map("log_id")
+  userId    Int      @map("user_id")
+  date      DateTime @default(now())
+  exercises String   // Stored as JSON string (list)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, date])
+  @@map("exercise_logs")
+}
+
+// WaterIntake model for tracking daily water consumption
+model WaterIntake {
+  id        Int      @id @default(autoincrement()) @map("intake_id")
+  userId    Int      @map("user_id")
+  date      DateTime @default(now())
+  glasses   Int      @default(0) // Number of glasses (250ml each)
+  goal      Int      @default(8) // Daily goal in glasses
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, date])
+  @@unique([userId, date])
+  @@map("water_intake")
+}
+
+// Favorites model for frequently used foods and exercises
+model Favorite {
+  id        Int      @id @default(autoincrement()) @map("favorite_id")
+  userId    Int      @map("user_id")
+  itemType  String   @map("item_type") // 'food' or 'exercise'
+  itemId    Int      @map("item_id") // ID of food or exercise
+  itemName  String   @map("item_name") // Name for quick display
+  itemData  String   @map("item_data") // JSON string with full item data
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, itemType])
+  @@unique([userId, itemType, itemId])
+  @@map("favorites")
+}
+
+// FoodItem model from UML diagram
+model FoodItem {
+  id        Int      @id @default(autoincrement()) @map("food_id")
+  name      String
+  calories  Int
+  allergens String?  // Stored as JSON string (list)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("food_items")
+}
+
+// ExerciseItem model from UML diagram
+model ExerciseItem {
+  id           Int      @id @default(autoincrement()) @map("exercise_id")
+  name         String
+  impactLevel  String   @map("impact_level")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  @@map("exercise_items")
+}
