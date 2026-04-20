@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
-    "check-db": "node scripts/check-database.js",
+    "postinstall": "prisma generate",
     "db-studio": "prisma studio",
     "db-seed": "tsx prisma/seed.ts"
   },
