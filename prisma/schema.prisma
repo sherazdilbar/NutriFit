@@ -29,6 +29,8 @@ model User {
   waterIntake   WaterIntake[]
   favorites     Favorite[]
   
+  @@index([email])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -51,6 +53,8 @@ model HealthProfile {
   // Relations
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  @@index([userId])
+  @@index([updatedAt])
   @@map("health_profiles")
 }
 
@@ -85,6 +89,8 @@ model DietPlan {
   // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  @@index([userId])
+  @@index([createdAt])
   @@map("diet_plans")
 }
 
@@ -99,6 +105,8 @@ model WorkoutPlan {
   // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  @@index([userId])
+  @@index([createdAt])
   @@map("workout_plans")
 }
 
@@ -172,9 +180,12 @@ model FoodItem {
   id        Int      @id @default(autoincrement()) @map("food_id")
   name      String
   calories  Int
+  category  String   @default("Other") // Food category: Vegetables, Fruits, Grains, Protein, Dairy, Snacks, Beverages, Other
   allergens String?  // Stored as JSON string (list)
   createdAt DateTime @default(now()) @map("created_at")
   
+  @@index([name])
+  @@index([calories])
   @@map("food_items")
 }
 
@@ -185,5 +196,7 @@ model ExerciseItem {
   impactLevel  String   @map("impact_level")
   createdAt    DateTime @default(now()) @map("created_at")
   
+  @@index([name])
+  @@index([impactLevel])
   @@map("exercise_items")
 }

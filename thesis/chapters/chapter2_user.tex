@@ -1,0 +1,303 @@
+\chapter{User Documentation}
+
+\section{Introduction}
+
+NutriFit is a comprehensive web-based health and fitness tracking application designed to help users manage their nutrition, exercise routines, and overall wellness goals through personalized recommendations and intelligent tracking features. The application provides an integrated platform where users can create detailed health profiles, generate customized diet and workout plans, log daily activities, set and monitor goals, and track their progress over time.
+
+The system architecture of NutriFit follows a modern three-tier design pattern as illustrated in Figure~\ref{fig:architecture}. The presentation layer consists of React-based user interface components built with Next.js framework, providing server-side rendering capabilities for improved performance. The application layer contains Next.js API routes that handle business logic, data validation, and authentication. The data layer utilizes Prisma ORM with SQLite database for efficient data management and persistence.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{architecture-diagram.png}
+\caption{System Architecture Framework}
+\label{fig:architecture}
+\end{figure}
+
+The architecture diagram shown in Figure~\ref{fig:architecture} demonstrates the clear separation of concerns between different layers. Client browsers communicate with the Next.js frontend through HTTPS requests. The frontend components interact with API routes for data operations. These API routes process requests, perform business logic operations, and communicate with the Prisma ORM layer. Finally, Prisma ORM translates operations into SQL queries and manages interactions with the SQLite database, ensuring data integrity and consistency.
+
+\section{System Requirements}
+
+To run NutriFit successfully, the system must meet certain hardware and software requirements.
+
+\subsection{Hardware Requirements}
+
+Minimum specifications: 2 GHz dual-core processor, 4 GB RAM (8 GB recommended), 500 MB free disk space, and stable internet connection (minimum 1 Mbps).
+
+\subsection{Software Requirements}
+
+Required software: Node.js version 18.x or higher, and a modern web browser (Chrome 90+, Firefox 88+, Safari 14+, or Edge 90+). For development: Visual Studio Code and Git version control system.
+
+\section{Installation and Setup}
+
+The installation process involves several steps to set up and run the application.
+
+\subsection{Installation Steps}
+
+First, clone the repository using git clone command and navigate to the project directory. Install dependencies by running npm install, which downloads all required packages including Next.js, React, and Prisma. Initialize the database with npx prisma generate to create the database client, npx prisma migrate dev to create tables, and npx prisma db seed to populate initial data. Create a .env file with DATABASE\_URL pointing to the SQLite database and JWT\_SECRET for token signing. Finally, start the development server with npm run dev and access the application at http://localhost:3000.
+
+\section{User Interface Overview}
+
+The NutriFit user interface is designed with simplicity and usability in mind, following modern web design principles and responsive layout patterns. This section provides an overview of the main interface components and navigation structure.
+
+\subsection{Landing Page}
+
+The landing page serves as the entry point to the application, as shown in Figure~\ref{fig:register}. It features a clean, professional design with the NutriFit branding prominently displayed. The page uses a split-screen layout where the left side presents the application branding with a gradient background in primary blue colors, decorative patterns, and the NutriFit logo. This branding section includes a compelling headline describing the application's purpose and three key features highlighted with checkmark icons. The right side of the screen contains the registration or login form, depending on which page the user is accessing.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{register.png}
+\caption{User Registration Interface}
+\label{fig:register}
+\end{figure}
+
+Figure~\ref{fig:register} illustrates the registration page where new users can create their accounts. The form includes input fields for full name, email address, password, and password confirmation. Each input field is enhanced with icons for visual clarity. The form implements real-time validation, displaying error messages immediately when users enter invalid data. Upon successful registration, users are automatically logged in and redirected to the dashboard.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{login.png}
+\caption{User Login Interface}
+\label{fig:login}
+\end{figure}
+
+The login page shown in Figure~\ref{fig:login} follows the same split-screen design pattern as the registration page, maintaining visual consistency throughout the authentication flow. Users enter their registered email address and password to access their accounts. The system validates credentials against the database and generates a JWT token upon successful authentication. This token is stored in the browser's local storage and included in subsequent API requests for authorization.
+
+\subsection{Dashboard Layout}
+
+After authentication, users access the main dashboard shown in Figure~\ref{fig:dashboard}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{dashboard.png}
+\caption{Main Dashboard Overview}
+\label{fig:dashboard}
+\end{figure}
+
+Figure~\ref{fig:dashboard} presents the complete dashboard interface. The navigation bar displays the NutriFit logo and user profile section. The main content shows quick stats cards for health profile status, active goals, generated plans, and water intake. The weekly summary presents statistics for the last seven days including meals logged, workouts completed, and average calories. The streaks section displays consecutive days of logging activity with special badges for achievements. The reminders section shows color-coded alerts: red for high priority (missing meal logs), yellow for medium priority (exercise reminders), and blue for low priority (water intake). Recipe suggestions display meal ideas generated from safe foods.
+
+The recipe suggestions section displays three meal ideas generated by combining safe foods from the catalog. Each recipe shows the list of ingredients with individual calorie counts and the total calories for the complete meal.
+
+\subsection{Navigation Structure}
+
+The application uses a consistent navigation pattern throughout all pages. The top navigation bar remains fixed at the top of the screen, providing quick access to main features. Users can navigate to different sections by clicking on menu items or using the feature cards on the dashboard. Each page includes a breadcrumb navigation element showing the current location within the application hierarchy and providing a back button to return to the previous page.
+
+\section{Functional Description}
+
+This section provides detailed descriptions of all functional features available in the NutriFit application. Each feature is explained with its purpose, usage instructions, and visual examples.
+
+\subsection{Health Profile Management}
+
+The health profile feature allows users to create and maintain comprehensive health information that forms the basis for personalized recommendations throughout the application.
+
+\subsubsection{Creating Health Profile}
+
+Users begin by navigating to the Health Profile section from the dashboard. The profile creation form, illustrated in Figure~\ref{fig:health-profile-create}, presents multiple input fields organized in a logical sequence.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{health-profile-create.png}
+\caption{Health Profile Creation Form}
+\label{fig:health-profile-create}
+\end{figure}
+
+As shown in Figure~\ref{fig:health-profile-create}, the form collects essential personal metrics including age in years, weight in kilograms, and height in centimeters. Users select their gender using radio buttons offering male or female options. The activity level dropdown menu provides five choices ranging from sedentary for minimal physical activity to very active for intensive daily exercise. Health goals are specified through radio buttons with three options: lose weight for calorie deficit, maintain weight for calorie maintenance, or gain weight for calorie surplus.
+
+The medical conditions section presents checkboxes for twelve common health conditions including heart disease, diabetes, hypertension, asthma, arthritis, back pain, obesity, osteoporosis, knee problems, hip problems, chronic pain, and an option for none. Users can select multiple conditions that apply to their situation. Similarly, the food allergens section allows users to identify any dietary restrictions by selecting from common allergens such as peanuts, dairy, gluten, shellfish, and others.
+
+When users submit the form, the system performs several calculations automatically. The Body Mass Index (BMI) is computed using the formula: weight in kilograms divided by height in meters squared. The system also calculates daily calorie needs using the Harris-Benedict equation, which considers age, weight, height, gender, and activity level. This calculated value is then adjusted based on the selected health goal, subtracting 500 calories for weight loss or adding 500 calories for weight gain.
+
+\subsubsection{Viewing Health Profile}
+
+After creating a health profile, users can view their complete health information in a read-only format as demonstrated in Figure~\ref{fig:health-profile-view}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{health-profile-view.png}
+\caption{Health Profile Display}
+\label{fig:health-profile-view}
+\end{figure}
+
+The profile view page shown in Figure~\ref{fig:health-profile-view} displays all entered information in an organized layout. Personal metrics appear at the top, followed by the calculated BMI with its corresponding category classification. The BMI categories are: underweight for values below 18.5, normal weight for values between 18.5 and 24.9, overweight for values between 25 and 29.9, and obese for values 30 and above. The activity level and health goals are displayed with clear labels. If the user has specified any medical conditions or food allergens, these appear in separate sections with appropriate warning indicators. The calculated daily calorie needs are prominently displayed to help users understand their nutritional requirements. An edit button allows users to modify their profile information when needed.
+
+\subsection{Diet Plan Generation}
+
+The diet plan generation feature creates personalized meal plans based on the user's health profile, ensuring balanced nutrition while respecting dietary restrictions.
+
+\subsubsection{Generating a Diet Plan}
+
+Users access the diet plan feature from the dashboard and click the "Generate New Plan" button. The system retrieves the user's health profile and performs several calculations to create an appropriate meal plan.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{diet-plan-view.png}
+\caption{Generated Diet Plan Display}
+\label{fig:diet-plan}
+\end{figure}
+
+Figure~\ref{fig:diet-plan} shows a complete generated diet plan. The plan generation algorithm first calculates the user's daily calorie needs based on their health profile. These calories are then distributed across four meals following nutritional guidelines: breakfast receives 25 percent of daily calories, lunch receives 35 percent, dinner receives 30 percent, and snacks receive the remaining 10 percent.
+
+The system queries the food database to retrieve all available food items, then filters out any foods containing allergens specified in the user's profile. For each meal, the algorithm selects foods to create balanced nutrition. Breakfast typically includes a protein source such as eggs or yogurt, a grain like oatmeal or bread, and a fruit. Lunch combines a protein source, a carbohydrate, and two different vegetables to ensure variety and nutritional balance. Dinner follows a similar pattern with protein, carbohydrate, and vegetables. Snacks consist of lighter items such as fruits or nuts.
+
+Each food item in the plan displays its name and calorie content. The total calories for each meal are calculated and shown, along with the grand total for the entire day. This transparency helps users understand their nutritional intake and make informed decisions about their diet.
+
+\subsection{Workout Plan Generation}
+
+The workout plan feature generates personalized exercise routines that consider the user's medical conditions to ensure safety during physical activity.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{workout-plan-view.png}
+\caption{Generated Workout Plan Display}
+\label{fig:workout-plan}
+\end{figure}
+
+As illustrated in Figure~\ref{fig:workout-plan}, the workout plan presents a structured exercise routine. The generation algorithm analyzes the user's medical conditions to determine appropriate exercise intensity. Users with heart disease or severe hypertension receive low-intensity plans focusing on gentle activities like walking and swimming. Users with joint problems such as arthritis, knee problems, or hip problems receive plans that avoid high-impact exercises. Healthy users without medical conditions can receive high-intensity plans with a full range of exercises.
+
+Each exercise in the plan specifies the exercise name, number of sets to perform, number of repetitions per set, and recommended rest time between sets. The impact level is indicated with a colored badge: green for low impact, yellow for medium impact, and red for high impact. This visual coding helps users quickly identify the intensity of each exercise. The plan includes a variety of exercise types covering cardio, strength training, and flexibility to provide comprehensive fitness benefits.
+
+\subsection{Food Catalog Browsing}
+
+The food catalog provides access to a comprehensive database of food items with detailed nutritional information and safety indicators.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{food-catalog.png}
+\caption{Food Catalog with Safety Indicators}
+\label{fig:food-catalog}
+\end{figure}
+
+Figure~\ref{fig:food-catalog} displays the food catalog interface. The catalog contains over one hundred food items organized into six categories: fruits, vegetables, proteins, grains, dairy, and snacks. At the top of the page, a search bar allows users to find specific foods by typing their names. Category filter buttons enable users to view only foods from selected categories. A nutrition filter option shows only low-calorie foods containing 100 calories or less per serving.
+
+Each food item appears as a card displaying the food name prominently at the top, followed by the calorie content in large numbers. If the food contains allergens, these are listed below the calories. The system compares food allergens against the user's allergen profile and displays appropriate safety badges. A green "SAFE" badge indicates the food contains no allergens matching the user's profile. A yellow "WARNING" badge appears when the food contains one allergen from the user's profile. A red "DANGER" badge is shown when the food contains multiple allergens, strongly advising the user to avoid it.
+
+A star icon in the corner of each card allows users to mark foods as favorites for quick access later. An "Add to Meal Log" button enables users to quickly log the food item in their daily meal tracking.
+
+\subsection{Exercise Catalog Browsing}
+
+The exercise catalog provides a comprehensive collection of exercises with impact level information and safety warnings.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{exercise-catalog.png}
+\caption{Exercise Catalog with Impact Levels}
+\label{fig:exercise-catalog}
+\end{figure}
+
+As shown in Figure~\ref{fig:exercise-catalog}, the exercise catalog presents over fifty exercises organized into categories including cardio, strength, flexibility, core, upper body, and lower body. Similar to the food catalog, users can search for specific exercises using the search bar or filter by category using the category buttons. An impact level filter allows users to view only exercises matching their preferred intensity level.
+
+Each exercise card displays the exercise name, a colored impact level badge, and a brief description of the exercise. The impact level badges use green for low-impact exercises suitable for beginners or those with joint problems, yellow for medium-impact exercises appropriate for most users, and red for high-impact exercises requiring good fitness levels. When the system detects that an exercise may be unsafe based on the user's medical conditions, a warning message appears on the card advising caution or suggesting alternatives.
+
+Users can mark exercises as favorites using the star icon and quickly add exercises to their workout log using the "Add to Workout Log" button.
+
+\subsection{Meal Logging}
+
+The meal logging feature enables users to track their daily food intake with automatic calorie calculation and validation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{log-meal.png}
+\caption{Meal Logging Interface}
+\label{fig:log-meal}
+\end{figure}
+
+Figure~\ref{fig:log-meal} illustrates the meal logging interface. Users begin by selecting the date for the meal log using a date picker, which defaults to the current date. The system validates that users cannot select future dates, preventing invalid entries. Users then search for food items using the search functionality, which queries the food database and displays matching results. Clicking on a food item adds it to the meal with a default quantity of one serving.
+
+The interface displays all added food items in a list, showing the food name, quantity, and calories for each item. Users can adjust quantities using increment and decrement buttons or by typing directly into the quantity field. A remove button allows users to delete items from the meal if added by mistake. The total calories for the meal are calculated automatically and displayed prominently, updating in real-time as users add or remove items or change quantities.
+
+When users click the "Save Meal Log" button, the system performs several validations. It checks that at least one food item has been added, verifies that the date is not in the future, and queries the database to ensure no duplicate meal log exists within one hour of the specified time. This duplicate check prevents accidental double-logging of the same meal. If all validations pass, the meal log is saved to the database, and the user's meal logging streak is updated.
+
+\subsection{Exercise Logging}
+
+The exercise logging feature allows users to record their workout activities with duration and intensity tracking.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{log-exercise.png}
+\caption{Exercise Logging Interface}
+\label{fig:log-exercise}
+\end{figure}
+
+As demonstrated in Figure~\ref{fig:log-exercise}, the exercise logging interface follows a similar pattern to meal logging. Users select a date using the date picker, search for exercises in the database, and add them to their workout log. For each exercise, users specify the number of sets performed, repetitions per set, and total duration in minutes. The duration field accepts only numeric values to ensure data validity.
+
+The interface displays all added exercises in a list format, showing the exercise name, impact level badge, sets, reps, and duration. Users can modify these values or remove exercises before saving. The total number of exercises and total sets are calculated and displayed in a summary panel.
+
+Upon clicking "Save Workout Log", the system validates that at least one exercise has been added, the date is not in the future, and no duplicate exercise log exists within two hours of the specified time. The two-hour window for exercise logs is longer than the one-hour window for meal logs because workouts typically take more time and users are less likely to perform the same workout twice in quick succession. After successful validation, the exercise log is saved and the user's exercise streak is updated.
+
+\subsection{Goal Management}
+
+The goal management feature enables users to set specific health and fitness targets and track their progress toward achieving them.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{goals.png}
+\caption{Goal Management Interface}
+\label{fig:goals}
+\end{figure}
+
+Figure~\ref{fig:goals} shows the goal management interface where users can view all their goals and their current progress. Users create new goals by clicking the "Create New Goal" button, which opens a form requesting goal type, target value, optional start value, and optional deadline date. The system supports three goal types: weight goals measured in kilograms, calorie goals for daily calorie intake targets, and workout goals for number of workouts per week or month.
+
+Each goal appears as a card displaying the goal type with an appropriate icon, a description of the goal, and a visual progress bar. The progress bar fills from left to right as the user makes progress toward their target, with the fill color indicating status: green for goals on track with over 50 percent progress, yellow for goals needing attention with 25 to 50 percent progress, and red for goals behind schedule with less than 25 percent progress.
+
+Below the progress bar, the current value and target value are displayed numerically, along with the percentage of completion. If a deadline was set, the remaining days until the deadline appear with a calendar icon. The goal status badge shows whether the goal is active, completed, or cancelled. Update and delete buttons allow users to modify goal progress or remove goals that are no longer relevant.
+
+\subsection{Progress Tracking}
+
+The progress tracking feature provides comprehensive visualization of user activity and achievements over time.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{progress.png}
+\caption{Progress Tracking Dashboard}
+\label{fig:progress}
+\end{figure}
+
+As illustrated in Figure~\ref{fig:progress}, the progress tracking dashboard presents multiple views of user data. Summary statistics at the top show total meals logged, total workouts completed, average daily calories, current weight, current BMI, and number of active goals. These statistics provide a quick overview of overall activity levels.
+
+The calorie trend chart displays daily calorie intake over the past thirty days using a line graph. The x-axis represents dates while the y-axis shows calorie values. This visualization helps users identify patterns in their eating habits and see whether they are consistently meeting their calorie targets.
+
+The activity distribution chart uses a pie chart to show the proportion of different food categories consumed. Each category is represented by a colored segment with the category name and percentage labeled. This helps users understand whether they are achieving balanced nutrition across different food groups.
+
+The workout frequency chart presents a bar graph showing the number of workouts completed each week over the past month. Taller bars indicate weeks with more workout activity, helping users identify periods of high and low exercise engagement.
+
+\subsection{Water Intake Tracking}
+
+The water intake tracking feature helps users monitor their daily hydration levels with a simple and intuitive interface.
+
+The water intake widget appears on the dashboard showing the current number of glasses consumed and the daily goal, which defaults to eight glasses of 250 milliliters each. A progress bar visualizes the percentage of the goal achieved, filling with blue color as more glasses are logged. Plus and minus buttons allow users to quickly add or remove glasses with a single click. The system ensures that the glass count cannot go below zero and creates a unique water intake record for each user for each day, preventing duplicate entries.
+
+\subsection{Favorites Management}
+
+The favorites system allows users to save frequently used foods and exercises for quick access during logging.
+
+Users can mark any food or exercise as a favorite by clicking the star icon on its card in the catalog. The star icon fills with color to indicate the item has been favorited. Clicking the star again removes the item from favorites. The system stores favorite items in the database along with complete item data, enabling quick retrieval without additional database queries. Users can view all their favorite items in a dedicated favorites section and add them to logs with a single click.
+
+\subsection{Reminders System}
+
+The reminders system provides intelligent notifications to encourage consistent user engagement with the application.
+
+The system automatically generates reminders based on user activity patterns. If no meal has been logged on the current day, a high-priority reminder appears with a red background urging the user to log their meals. If no exercise has been logged in the past three days, a medium-priority reminder with yellow background suggests logging a workout. If water intake is below the daily goal, a low-priority reminder with blue background encourages drinking more water. When a goal deadline is approaching within seven days and progress is below 50 percent, a high-priority reminder alerts the user to increase their efforts. Each reminder includes a link to the relevant feature for quick action.
+
+\subsection{Recipe Suggestions}
+
+The recipe suggestions feature generates meal ideas by intelligently combining foods from the catalog.
+
+The system creates recipes by selecting one protein food, one carbohydrate food, and one or two vegetable foods from the safe foods list that excludes user allergens. Each recipe displays a generated name combining the ingredient names, a list of all ingredients with their individual calorie counts, and the total calories for the complete recipe. Three to five recipe suggestions appear on the dashboard, providing users with meal inspiration that respects their dietary restrictions.
+
+\subsection{Password Management}
+
+The application implements secure password management following industry best practices. During registration, users must enter a password of at least six characters and confirm it by typing it again. The system validates that both password entries match before proceeding. Passwords are never stored in plain text. Instead, the system uses the bcrypt hashing algorithm with a salt factor of ten to create a secure hash of the password. This hash is stored in the database. During login, the system hashes the entered password using the same algorithm and compares it with the stored hash to verify credentials.
+
+\subsection{Logout}
+
+Users can log out of the application by clicking on their profile avatar in the top navigation bar and selecting the logout option from the dropdown menu. The logout process removes the JWT token from the browser's local storage and redirects the user to the login page. This ensures that the user's session is properly terminated and unauthorized access is prevented.
+
+\section{Error Handling and Notifications}
+
+The application implements comprehensive error handling and user notification systems to provide clear feedback and guide users through various scenarios.
+
+When users encounter errors, the system displays clear, actionable error messages. Form validation errors appear immediately below the relevant input fields in red text, explaining what needs to be corrected. For example, if a user enters an invalid email format, the message "Invalid email format" appears below the email field. If a required field is left empty, the message "This field is required" guides the user to complete the form.
+
+API errors are handled gracefully with user-friendly messages. If a network request fails, the system displays a notification explaining the issue and suggesting possible solutions. For example, if registration fails because the email is already in use, the message "Email already registered. Please use a different email or login instead" appears.
+
+Success notifications appear as green banners at the top of the screen when operations complete successfully. For example, after successfully logging a meal, a message "Meal logged successfully!" appears briefly before automatically disappearing. These positive feedback messages confirm to users that their actions were completed as intended.
+
+Loading states are indicated with spinner animations and disabled buttons to prevent duplicate submissions. When users click a submit button, it changes to a "Loading..." state and becomes unclickable until the operation completes. This prevents users from accidentally submitting forms multiple times and provides visual feedback that the system is processing their request.

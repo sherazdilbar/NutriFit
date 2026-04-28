@@ -1,0 +1,124 @@
+\documentclass[
+	%parspace, % Add vertical space between paragraphs
+	%noindent, % No indentation of first lines in each paragraph
+	%nohyp, % No hyphenation of words
+	%twoside, % Double sided format
+	%draft, % Quicker draft compilation without rendering images
+	%final, % Set final to hide todos
+]{elteikthesis}[2024/04/26]
+
+% The minted package is also supported for source highlighting
+% See elteikthesis_minted.tex for example
+%\usepackage[newfloat]{minted}
+
+% Document's metadata
+\title{NutriFit: A Comprehensive Health and Fitness Tracking Application} % title
+\date{2026} % year of defense
+
+% Author's metadata
+\author{[Your Full Name]} % Replace with your name
+\degree{Computer Science BSc} % Or your degree program
+
+% Supervisor(s)' metadata
+\supervisor{[Supervisor's Name]} % Replace with supervisor's name
+\affiliation{[Supervisor's Title]} % Replace with supervisor's title
+%\extsupervisor{Jane Doe} % external supervisor's name (if applicable)
+%\extaffiliation{Senior Developer} % external supervisor's affiliation
+
+% University's metadata
+\university{Eötvös Loránd University} % university's name
+\faculty{Faculty of Informatics} % faculty's name
+\department{Dept. of Software Technology and Methodology} % department's name
+\city{Budapest} % city
+\logo{elte_cimer_szines} % logo
+
+% Add bibliography file
+\addbibresource{references.bib}
+
+% The document
+\begin{document}
+
+% Set document language
+%\documentlang{hungarian}
+\documentlang{english}
+
+% List of todos (not in the final document)
+%\listoftodos[\todolabel]
+
+% Title page (mandatory)
+\maketitle
+
+% Topic declaration page (mandatory) - can also be attached instead
+% Option 1: Include as image
+\input{chapters/01-registration-form}
+% Option 2: Attach physical copy instead
+%\includepdf{topicdeclaration.pdf}
+
+% Acknowledgements (optional)
+\chapter*{\acklabel}
+\addcontentsline{toc}{chapter}{\acklabel}
+\input{chapters/02-acknowledgements}
+\cleardoublepage
+
+% Abstract
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\input{chapters/03-abstract}
+\cleardoublepage
+
+% Table of contents (mandatory)
+\tableofcontents
+\cleardoublepage
+
+% Main content - 4 Chapters
+\input{chapters/chapter1-introduction}
+\cleardoublepage
+
+\input{chapters/chapter2-user-documentation}
+\cleardoublepage
+
+\input{chapters/chapter3-developer-documentation}
+\cleardoublepage
+
+\input{chapters/chapter4-summary}
+\cleardoublepage
+
+% Appendices (optional) - NOT NEEDED for this thesis
+% \appendix
+% \input{chapters/appendix.tex}
+% \cleardoublepage
+
+% Bibliography (mandatory)
+\phantomsection
+\addcontentsline{toc}{chapter}{\biblabel}
+\printbibliography[title=\biblabel]
+\cleardoublepage
+
+% List of figures (optional) - useful over 3-5 figures
+\phantomsection
+\addcontentsline{toc}{chapter}{\lstfigurelabel}
+\listoffigures
+\cleardoublepage
+
+% List of tables (optional) - useful over 3-5 tables
+\phantomsection
+\addcontentsline{toc}{chapter}{\lsttablelabel}
+\listoftables
+\cleardoublepage
+
+% List of codes (optional) - useful over 3-5 code samples
+\phantomsection
+\addcontentsline{toc}{chapter}{\lstcodelabel}
+\lstlistoflistings
+\cleardoublepage
+
+% List of Abbreviations (optional but recommended)
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+\input{chapters/abbreviations}
+\cleardoublepage
+
+% List of symbols (optional) - not needed for this thesis
+%\printnomenclature
+
+\end{document}

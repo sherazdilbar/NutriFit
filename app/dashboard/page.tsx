@@ -24,7 +24,12 @@ export default function Dashboard() {
   const [waterIntake, setWaterIntake] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
   const [recipes, setRecipes] = useState<any[]>([]);
+  const [allRecipes, setAllRecipes] = useState<any[]>([]);
+  const [selectedMealType, setSelectedMealType] = useState<string>('auto');
+  const [isRemindersOpen, setIsRemindersOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const remindersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,14 +41,29 @@ export default function Dashboard() {
     }
 
     setUser(JSON.parse(userData));
-    fetchHealthProfile(token);
-    fetchGoals(token);
-    fetchPlanCounts(token);
-    fetchWeeklySummary(token);
-    fetchStreaks(token);
-    fetchWaterIntake(token);
-    fetchReminders(token);
-    fetchRecipes(token);
+    
+    // Load data in parallel for faster initial load
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchHealthProfile(token),
+          fetchGoals(token),
+          fetchPlanCounts(token),
+          fetchWeeklySummary(token),
+          fetchStreaks(token),
+          fetchWaterIntake(token),
+          fetchReminders(token),
+          fetchRecipes(token),
+        ]);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [router]);
 
   const fetchHealthProfile = async (token: string) => {
@@ -148,6 +168,8 @@ export default function Dashboard() {
       const data = await response.json();
       if (data.success) {
         setWaterIntake(data.intake);
+        // Refresh reminders after water intake update
+        fetchReminders(token);
       }
     } catch (error) {
       console.error('Failed to update water intake:', error);
@@ -175,10 +197,40 @@ export default function Dashboard() {
       });
       const data = await response.json();
       if (data.success) {
-        setRecipes(data.recipes.slice(0, 3)); // Show only 3 recipes
+        setAllRecipes(data.recipes);
+        // Set initial recipes based on auto mode
+        filterRecipesByMealType('auto', data.recipes);
       }
     } catch (error) {
       console.error('Failed to fetch recipes:', error);
+    }
+  };
+
+  const filterRecipesByMealType = (mealType: string, recipesToFilter = allRecipes) => {
+    setSelectedMealType(mealType);
+    
+    if (mealType === 'auto') {
+      // Auto mode: Filter based on current time
+      const currentHour = new Date().getHours();
+      let filtered = recipesToFilter;
+
+      if (currentHour >= 6 && currentHour < 11) {
+        filtered = recipesToFilter.filter((r: any) => r.mealType === 'breakfast');
+      } else if (currentHour >= 11 && currentHour < 16) {
+        filtered = recipesToFilter.filter((r: any) => r.mealType === 'lunch');
+      } else if (currentHour >= 16 && currentHour < 21) {
+        filtered = recipesToFilter.filter((r: any) => r.mealType === 'dinner');
+      } else {
+        filtered = recipesToFilter.filter((r: any) => r.mealType === 'snack');
+      }
+      setRecipes(filtered);
+    } else if (mealType === 'all') {
+      // Show all recipes
+      setRecipes(recipesToFilter);
+    } else {
+      // Filter by specific meal type
+      const filtered = recipesToFilter.filter((r: any) => r.mealType === mealType);
+      setRecipes(filtered);
     }
   };
 
@@ -186,6 +238,9 @@ export default function Dashboard() {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (remindersRef.current && !remindersRef.current.contains(event.target as Node)) {
+        setIsRemindersOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -204,10 +259,56 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show skeleton while loading data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        {/* Navigation */}
+        <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">N</span>
+                </div>
+                <span className="ml-3 text-xl font-semibold text-gray-900">
+                  Nutri<span className="text-primary-600">Fit</span>
+                </span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-6 h-6 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-9 h-9 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Loading Skeleton */}
+        <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded w-64 mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 animate-pulse"></div>
+            <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 h-48 animate-pulse"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -228,50 +329,151 @@ export default function Dashboard() {
               </span>
             </Link>
 
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
-              >
-                <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                  {getInitials(user.name)}
-                </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
-                </div>
-                <svg
-                  className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div className="flex items-center space-x-4">
+              {/* Reminders Bell Icon */}
+              <div className="relative" ref={remindersRef}>
+                <button
+                  onClick={() => setIsRemindersOpen(!isRemindersOpen)}
+                  className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-                    <span className="inline-block mt-2 bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs font-medium">
-                      {user.role}
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {reminders.length > 0 && (
+                    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {reminders.length}
                     </span>
+                  )}
+                </button>
+
+                {isRemindersOpen && (
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                    <div className="p-4 border-b border-gray-100 bg-gray-50">
+                      <h3 className="text-sm font-semibold text-gray-900">Reminders</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {reminders.length > 0 ? (
+                        <div className="divide-y divide-gray-100">
+                          {reminders.map((reminder, index) => (
+                            <div 
+                              key={index}
+                              className={`p-4 hover:bg-gray-50 transition-colors ${
+                                reminder.priority === 'high' 
+                                  ? 'border-l-4 border-red-500' 
+                                  : reminder.priority === 'medium'
+                                  ? 'border-l-4 border-yellow-500'
+                                  : 'border-l-4 border-blue-500'
+                              }`}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <svg 
+                                  className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                                    reminder.priority === 'high' 
+                                      ? 'text-red-600' 
+                                      : reminder.priority === 'medium'
+                                      ? 'text-yellow-600'
+                                      : 'text-blue-600'
+                                  }`} 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-900">{reminder.message}</p>
+                                  {reminder.type === 'meal' && (
+                                    <Link 
+                                      href="/dashboard/log-meal" 
+                                      className="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1 inline-block"
+                                      onClick={() => setIsRemindersOpen(false)}
+                                    >
+                                      Log a meal now →
+                                    </Link>
+                                  )}
+                                  {reminder.type === 'exercise' && (
+                                    <Link 
+                                      href="/dashboard/log-exercise" 
+                                      className="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1 inline-block"
+                                      onClick={() => setIsRemindersOpen(false)}
+                                    >
+                                      Log a workout now →
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center">
+                          <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm text-gray-500">No reminders</p>
+                          <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="p-2">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors text-sm text-gray-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      <span>Logout</span>
-                    </button>
+                )}
+              </div>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
+                >
+                  <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    {getInitials(user.name)}
                   </div>
-                </div>
-              )}
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                      <span className="inline-block mt-2 bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs font-medium">
+                        {user.role}
+                      </span>
+                    </div>
+                    <div className="p-2">
+                      <Link
+                        href="/dashboard/settings"
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors text-sm text-gray-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Settings</span>
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors text-sm text-gray-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -362,91 +564,231 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Reminders Section */}
-        {reminders.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Reminders</h2>
-            <div className="space-y-3">
-              {reminders.map((reminder, index) => (
-                <div 
-                  key={index}
-                  className={`rounded-lg border p-4 flex items-start space-x-3 ${
-                    reminder.priority === 'high' 
-                      ? 'bg-red-50 border-red-200' 
-                      : reminder.priority === 'medium'
-                      ? 'bg-yellow-50 border-yellow-200'
-                      : 'bg-blue-50 border-blue-200'
-                  }`}
-                >
-                  <svg 
-                    className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                      reminder.priority === 'high' 
-                        ? 'text-red-600' 
-                        : reminder.priority === 'medium'
-                        ? 'text-yellow-600'
-                        : 'text-blue-600'
-                    }`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${
-                      reminder.priority === 'high' 
-                        ? 'text-red-900' 
-                        : reminder.priority === 'medium'
-                        ? 'text-yellow-900'
-                        : 'text-blue-900'
-                    }`}>
-                      {reminder.message}
-                    </p>
-                    {reminder.type === 'meal' && (
-                      <Link href="/dashboard/log-meal" className="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1 inline-block">
-                        Log a meal now →
-                      </Link>
-                    )}
-                    {reminder.type === 'exercise' && (
-                      <Link href="/dashboard/log-exercise" className="text-xs text-primary-600 hover:text-primary-700 font-medium mt-1 inline-block">
-                        Log a workout now →
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Recipe Suggestions */}
-        {recipes.length > 0 && (
+        {allRecipes.length > 0 && (
           <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recipe Suggestions</h2>
-              <span className="text-xs text-gray-500">Based on safe foods for you</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Recipe Suggestions</h2>
+                {selectedMealType === 'auto' && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date().getHours() >= 6 && new Date().getHours() < 11 
+                      ? 'Showing breakfast recipes for this morning' 
+                      : new Date().getHours() >= 11 && new Date().getHours() < 16
+                      ? 'Showing lunch recipes for this afternoon'
+                      : new Date().getHours() >= 16 && new Date().getHours() < 21
+                      ? 'Showing dinner recipes for this evening'
+                      : 'Showing snack recipes for tonight'}
+                  </p>
+                )}
+              </div>
+              
+              {/* Meal Type Selector - Scrollable on mobile, right-aligned on desktop */}
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-1 gap-1 shadow-sm">
+                  <button
+                    onClick={() => filterRecipesByMealType('auto')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'auto'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Auto</span>
+                  </button>
+                  <button
+                    onClick={() => filterRecipesByMealType('breakfast')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'breakfast'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span>Breakfast</span>
+                  </button>
+                  <button
+                    onClick={() => filterRecipesByMealType('lunch')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'lunch'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Lunch</span>
+                  </button>
+                  <button
+                    onClick={() => filterRecipesByMealType('dinner')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'dinner'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <span>Dinner</span>
+                  </button>
+                  <button
+                    onClick={() => filterRecipesByMealType('snack')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'snack'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Snacks</span>
+                  </button>
+                  <button
+                    onClick={() => filterRecipesByMealType('all')}
+                    className={`px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedMealType === 'all'
+                        ? 'bg-primary-50 text-primary-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                    <span>All</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recipes.map((recipe) => (
-                <div key={recipe.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-sm transition-all">
-                  <h3 className="font-semibold text-gray-900 mb-3 text-sm">{recipe.name}</h3>
-                  <div className="space-y-2 mb-4">
-                    {recipe.ingredients.map((ing: any) => (
-                      <div key={ing.id} className="flex justify-between items-center text-xs">
-                        <span className="text-gray-700">{ing.name}</span>
-                        <span className="text-gray-500">{ing.calories} cal</span>
+
+            {recipes.length > 0 ? (
+              <>
+                {selectedMealType === 'all' ? (
+                  // Grouped view for "All" tab
+                  <div className="space-y-8">
+                    {['breakfast', 'lunch', 'dinner', 'snack'].map(mealType => {
+                      const mealRecipes = allRecipes.filter((r: any) => r.mealType === mealType);
+                      if (mealRecipes.length === 0) return null;
+                      
+                      return (
+                        <div key={mealType}>
+                          <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${
+                              mealType === 'breakfast' ? 'bg-yellow-500' :
+                              mealType === 'lunch' ? 'bg-blue-500' :
+                              mealType === 'dinner' ? 'bg-purple-500' :
+                              'bg-green-500'
+                            }`}></span>
+                            {mealType.charAt(0).toUpperCase() + mealType.slice(1)} Recipes
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {mealRecipes.map((recipe: any) => (
+                              <div key={recipe.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-all">
+                                <div className="flex items-start justify-between mb-3">
+                                  <h3 className="font-semibold text-gray-900 text-sm flex-1">{recipe.name}</h3>
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ml-2 ${
+                                    recipe.mealType === 'breakfast' ? 'bg-yellow-100 text-yellow-700' :
+                                    recipe.mealType === 'lunch' ? 'bg-blue-100 text-blue-700' :
+                                    recipe.mealType === 'dinner' ? 'bg-purple-100 text-purple-700' :
+                                    'bg-green-100 text-green-700'
+                                  }`}>
+                                    {recipe.mealType?.charAt(0).toUpperCase() + recipe.mealType?.slice(1)}
+                                  </span>
+                                </div>
+                                <div className="space-y-2 mb-4">
+                                  {recipe.ingredients.map((ing: any) => (
+                                    <div key={ing.id} className="flex justify-between items-center text-xs">
+                                      <span className="text-gray-700">{ing.name}</span>
+                                      <span className="text-gray-500">{ing.calories} cal</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="pt-3 border-t border-gray-100">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs font-medium text-gray-600">Total</span>
+                                      {recipe.calorieStatus && (
+                                        <span className={`text-xs px-2 py-0.5 rounded ${
+                                          recipe.calorieStatus === 'Low Cal' ? 'bg-green-100 text-green-700' :
+                                          recipe.calorieStatus === 'Balanced' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-orange-100 text-orange-700'
+                                        }`}>
+                                          {recipe.calorieStatus}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-lg font-bold text-primary-600">{recipe.totalCalories} cal</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  // Regular grid view for specific meal types
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recipes.map((recipe: any) => (
+                      <div key={recipe.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-all">
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="font-semibold text-gray-900 text-sm flex-1">{recipe.name}</h3>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ml-2 ${
+                            recipe.mealType === 'breakfast' ? 'bg-yellow-100 text-yellow-700' :
+                            recipe.mealType === 'lunch' ? 'bg-blue-100 text-blue-700' :
+                            recipe.mealType === 'dinner' ? 'bg-purple-100 text-purple-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {recipe.mealType?.charAt(0).toUpperCase() + recipe.mealType?.slice(1)}
+                          </span>
+                        </div>
+                        <div className="space-y-2 mb-4">
+                          {recipe.ingredients.map((ing: any) => (
+                            <div key={ing.id} className="flex justify-between items-center text-xs">
+                              <span className="text-gray-700">{ing.name}</span>
+                              <span className="text-gray-500">{ing.calories} cal</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs font-medium text-gray-600">Total</span>
+                              {recipe.calorieStatus && (
+                                <span className={`text-xs px-2 py-0.5 rounded ${
+                                  recipe.calorieStatus === 'Low Cal' ? 'bg-green-100 text-green-700' :
+                                  recipe.calorieStatus === 'Balanced' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-orange-100 text-orange-700'
+                                }`}>
+                                  {recipe.calorieStatus}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-lg font-bold text-primary-600">{recipe.totalCalories} cal</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-600">Total Calories</span>
-                      <span className="text-lg font-bold text-primary-600">{recipe.totalCalories}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-gray-600 text-sm">No recipes available for this meal type</p>
+                <p className="text-gray-500 text-xs mt-1">Try selecting a different meal type</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -753,7 +1095,7 @@ export default function Dashboard() {
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">

@@ -24,29 +24,37 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    // Fetch meal logs
-    const mealLogs = await prisma.mealLog.findMany({
-      where: {
-        userId,
-        date: {
-          gte: startDate,
-          lte: endDate,
+    // Fetch both logs in parallel for better performance
+    const [mealLogs, exerciseLogs] = await Promise.all([
+      prisma.mealLog.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-      },
-      orderBy: { date: 'asc' },
-    });
-
-    // Fetch exercise logs
-    const exerciseLogs = await prisma.exerciseLog.findMany({
-      where: {
-        userId,
-        date: {
-          gte: startDate,
-          lte: endDate,
+        orderBy: { date: 'asc' },
+        select: {
+          date: true,
+          meals: true,
         },
-      },
-      orderBy: { date: 'asc' },
-    });
+      }),
+      prisma.exerciseLog.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        orderBy: { date: 'asc' },
+        select: {
+          date: true,
+          exercises: true,
+        },
+      }),
+    ]);
 
     // Process data for charts
     const dailyCalories: { date: string; calories: number }[] = [];

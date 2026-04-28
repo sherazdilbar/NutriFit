@@ -76,12 +76,12 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = payload.userId as number;
-    const { age, weight, permissions, diseases, allergens } = await request.json();
+    const { age, weight, height, permissions, diseases, allergens } = await request.json();
 
     // Validate input
-    if (!age || !weight) {
+    if (!age || !weight || !height) {
       return NextResponse.json(
-        { error: 'Age and weight are required' },
+        { error: 'Age, weight, and height are required' },
         { status: 400 }
       );
     }
@@ -96,6 +96,13 @@ export async function POST(request: NextRequest) {
     if (weight < 1 || weight > 500) {
       return NextResponse.json(
         { error: 'Please enter a valid weight' },
+        { status: 400 }
+      );
+    }
+
+    if (height < 50 || height > 300) {
+      return NextResponse.json(
+        { error: 'Please enter a valid height (in cm)' },
         { status: 400 }
       );
     }
@@ -118,6 +125,7 @@ export async function POST(request: NextRequest) {
         userId,
         age: parseInt(age),
         weight: parseFloat(weight),
+        height: parseFloat(height),
         permissions: permissions || null,
         diseases: diseases ? JSON.stringify(diseases) : null,
         allergens: allergens ? JSON.stringify(allergens) : null,
@@ -159,7 +167,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const userId = payload.userId as number;
-    const { age, weight, permissions, diseases, allergens } = await request.json();
+    const { age, weight, height, permissions, diseases, allergens } = await request.json();
 
     // Validate input
     if (age && (age < 1 || age > 150)) {
@@ -176,12 +184,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (height && (height < 50 || height > 300)) {
+      return NextResponse.json(
+        { error: 'Please enter a valid height (in cm)' },
+        { status: 400 }
+      );
+    }
+
     // Update profile
     const profile = await prisma.healthProfile.update({
       where: { userId },
       data: {
         ...(age && { age: parseInt(age) }),
         ...(weight && { weight: parseFloat(weight) }),
+        ...(height && { height: parseFloat(height) }),
         permissions: permissions || null,
         diseases: diseases ? JSON.stringify(diseases) : null,
         allergens: allergens ? JSON.stringify(allergens) : null,

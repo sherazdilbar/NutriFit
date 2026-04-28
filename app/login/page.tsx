@@ -3,6 +3,13 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Toast from '@/components/Toast';
+
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -14,6 +21,19 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    email: '',
+    password: '',
+  });
+  const [toast, setToast] = useState<ToastState>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
+
+  const showToast = (message: string, type: ToastState['type']) => {
+    setToast({ show: true, message, type });
+  };
 
   useEffect(() => {
     if (searchParams.get('expired') === 'true') {
@@ -25,6 +45,19 @@ function LoginForm() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validate before submit
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+
+    if (emailError || passwordError) {
+      setValidationErrors({
+        email: emailError,
+        password: passwordError,
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -39,13 +72,26 @@ function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Login failed');
+        // Better error messages
+        let errorMessage = '';
+        if (response.status === 401) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        } else if (response.status === 404) {
+          errorMessage = 'No account found with this email. Please register first.';
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = data.error || 'Login failed. Please check your credentials.';
+        }
+        setError(errorMessage);
+        showToast(errorMessage, 'error');
         setLoading(false);
         return;
       }
 
       // Show success message
       setSuccess('Login successful! Redirecting...');
+      showToast('Login successful! Redirecting to dashboard...', 'success');
       setLoading(false);
 
       // Store token and user data
@@ -57,20 +103,65 @@ function LoginForm() {
         router.push('/dashboard');
       }, 800);
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      const errorMessage = 'Network error. Please check your internet connection and try again.';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
       setLoading(false);
     }
   };
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      return 'Email is required';
+    }
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      return 'Password is required';
+    }
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return '';
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+
+    // Real-time validation
+    if (name === 'email') {
+      setValidationErrors({
+        ...validationErrors,
+        email: validateEmail(value),
+      });
+    } else if (name === 'password') {
+      setValidationErrors({
+        ...validationErrors,
+        password: validatePassword(value),
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+      <div className="min-h-screen flex">
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-12 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern */}
@@ -157,11 +248,11 @@ function LoginForm() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" aria-label="Login form">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg" role="alert" aria-live="polite">
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <p className="text-red-700 text-sm font-medium">{error}</p>
@@ -170,9 +261,9 @@ function LoginForm() {
             )}
 
             {success && (
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg" role="alert" aria-live="polite">
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <p className="text-green-700 text-sm font-medium">{success}</p>
@@ -197,10 +288,26 @@ function LoginForm() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all text-gray-900"
+                  aria-label="Email address"
+                  aria-required="true"
+                  aria-invalid={!!validationErrors.email}
+                  aria-describedby={validationErrors.email ? "email-error" : undefined}
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${
+                    validationErrors.email 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                      : 'border-gray-200 focus:border-primary-500 focus:ring-primary-200'
+                  } focus:ring-2 focus:outline-none transition-all text-gray-900`}
                   placeholder="you@example.com"
                 />
               </div>
+              {validationErrors.email && (
+                <p id="email-error" className="mt-2 text-sm text-red-600 flex items-center" role="alert">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {validationErrors.email}
+                </p>
+              )}
             </div>
 
             <div>
@@ -220,15 +327,33 @@ function LoginForm() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all text-gray-900"
+                  aria-label="Password"
+                  aria-required="true"
+                  aria-invalid={!!validationErrors.password}
+                  aria-describedby={validationErrors.password ? "password-error" : undefined}
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${
+                    validationErrors.password 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                      : 'border-gray-200 focus:border-primary-500 focus:ring-primary-200'
+                  } focus:ring-2 focus:outline-none transition-all text-gray-900`}
                   placeholder="••••••••"
                 />
               </div>
+              {validationErrors.password && (
+                <p id="password-error" className="mt-2 text-sm text-red-600 flex items-center" role="alert">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {validationErrors.password}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
+              aria-busy={loading}
+              aria-label={loading ? "Signing in, please wait" : "Sign in to your account"}
               className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02]"
             >
               {loading ? (
@@ -267,6 +392,7 @@ function LoginForm() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

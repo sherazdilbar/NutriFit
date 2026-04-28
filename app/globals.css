@@ -38,3 +38,113 @@ body {
 
 
 
+
+/* Toast Animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Focus States for Accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary-600);
+  outline-offset: 2px;
+}
+
+/* Skip to main content link for screen readers */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  z-index: 999;
+  padding: 1em;
+  background-color: white;
+  color: var(--primary-600);
+  text-decoration: none;
+  border: 2px solid var(--primary-600);
+  border-radius: 4px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.skip-to-main:focus {
+  left: 50%;
+  top: 1em;
+  transform: translateX(-50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Print Styles */
+@media print {
+  /* Hide navigation, footer, and action buttons */
+  nav,
+  footer,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Hide breadcrumb, tabs, page header in print */
+  body > div > div:first-child,
+  .breadcrumb,
+  [class*="breadcrumb"],
+  [class*="tab"],
+  button,
+  a[href] {
+    display: none !important;
+  }
+
+  /* Optimize page layout for printing */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure charts and content are visible */
+  .bg-gray-50 {
+    background: white !important;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure proper sizing */
+  @page {
+    margin: 1cm;
+  }
+
+  /* Make sure charts are visible */
+  svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Show only print view */
+  .print\\:block {
+    display: block !important;
+  }
+}

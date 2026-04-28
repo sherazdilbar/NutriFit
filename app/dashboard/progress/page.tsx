@@ -29,12 +29,42 @@ export default function Progress() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchProgressStats();
+    // Load user data immediately (no API call)
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    
+    // Fetch progress data
+    fetchProgressStats();
   }, [timeRange]);
+
+  const fetchProgressStats = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/progress/stats?days=${timeRange}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'max-age=60' // Cache for 1 minute
+        },
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setProgressData(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch progress stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -45,29 +75,6 @@ export default function Progress() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const fetchProgressStats = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      const response = await fetch(`/api/progress/stats?days=${timeRange}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setProgressData(result.data);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch progress stats:', error);
-      setLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -81,12 +88,113 @@ export default function Progress() {
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+  const exportToCSV = () => {
+    if (!progressData) return;
+
+    let csvContent = 'NutriFit Progress Report\n\n';
+    csvContent += `Report Period: Last ${timeRange} Days\n`;
+    csvContent += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+
+    // Summary Stats
+    csvContent += 'SUMMARY STATISTICS\n';
+    csvContent += 'Metric,Value\n';
+    csvContent += `Total Meals Logged,${progressData.summary.totalMeals}\n`;
+    csvContent += `Total Workouts,${progressData.summary.totalWorkouts}\n`;
+    csvContent += `Average Daily Calories,${progressData.summary.avgCalories}\n\n`;
+
+    // Daily Calories
+    if (progressData.dailyCalories && progressData.dailyCalories.length > 0) {
+      csvContent += 'DAILY CALORIE INTAKE\n';
+      csvContent += 'Date,Calories\n';
+      progressData.dailyCalories.forEach((item: any) => {
+        csvContent += `${item.date},${item.calories}\n`;
+      });
+      csvContent += '\n';
+    }
+
+    // Daily Workouts
+    if (progressData.dailyWorkouts && progressData.dailyWorkouts.length > 0) {
+      csvContent += 'DAILY WORKOUT FREQUENCY\n';
+      csvContent += 'Date,Workout Count\n';
+      progressData.dailyWorkouts.forEach((item: any) => {
+        csvContent += `${item.date},${item.count}\n`;
+      });
+      csvContent += '\n';
+    }
+
+    // Food Categories
+    if (progressData.foodCategories && progressData.foodCategories.length > 0) {
+      csvContent += 'FOOD CATEGORY BREAKDOWN\n';
+      csvContent += 'Category,Count\n';
+      progressData.foodCategories.forEach((item: any) => {
+        csvContent += `${item.name},${item.value}\n`;
+      });
+    }
+
+    // Create download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `nutrifit-progress-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your progress...</p>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        {/* Navigation Skeleton */}
+        <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <div className="w-9 h-9 bg-primary-600 rounded-lg"></div>
+                <div className="ml-3 h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div className="w-32 h-9 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header Skeleton */}
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="flex space-x-2">
+              <div className="h-10 w-20 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Stats Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+                <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -95,7 +203,7 @@ export default function Progress() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/dashboard" className="flex items-center">
@@ -159,9 +267,9 @@ export default function Progress() {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 print:hidden">
         {/* Breadcrumb */}
-        <div className="mb-6">
+        <div className="mb-6 print:hidden">
           <Link 
             href="/dashboard"
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
@@ -174,34 +282,60 @@ export default function Progress() {
         </div>
 
         {/* Page Header with Time Range Selector */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">Progress & Analytics</h1>
             <p className="text-gray-600">Visualize your health journey</p>
           </div>
 
-          {/* Time Range Selector */}
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setTimeRange(7)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                timeRange === 7
-                  ? 'bg-primary-600 text-white'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              7 Days
-            </button>
-            <button
-              onClick={() => setTimeRange(30)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                timeRange === 30
-                  ? 'bg-primary-600 text-white'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              30 Days
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Time Range Selector */}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setTimeRange(7)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  timeRange === 7
+                    ? 'bg-primary-600 text-white'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                7 Days
+              </button>
+              <button
+                onClick={() => setTimeRange(30)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  timeRange === 30
+                    ? 'bg-primary-600 text-white'
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                30 Days
+              </button>
+            </div>
+
+            {/* Export & Print Buttons */}
+            <div className="flex space-x-2 print:hidden">
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                title="Export to CSV"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+              </button>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                title="Print Report"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print
+              </button>
+            </div>
           </div>
         </div>
         {/* Summary Stats */}
@@ -417,10 +551,171 @@ export default function Progress() {
       </div>
 
       {/* Spacer before footer */}
-      <div className="pb-8"></div>
+      <div className="pb-8 print:hidden"></div>
+
+      {/* Print View - Hidden on screen, visible only when printing */}
+      <div className="hidden print:block p-8">
+        {/* Print Header with Branding */}
+        <div className="mb-8 text-center border-b-2 border-primary-600 pb-6">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-white border-2 border-primary-600 rounded-xl flex items-center justify-center">
+              <span className="text-primary-600 font-bold text-3xl">N</span>
+            </div>
+            <span className="ml-4 text-4xl font-bold text-gray-900">
+              Nutri<span className="text-primary-600">Fit</span>
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Progress & Analytics Report</h1>
+          <p className="text-gray-600">Report Period: Last {timeRange} Days | Generated on {new Date().toLocaleDateString()}</p>
+        </div>
+
+        {/* Print Content */}
+        {progressData && (
+          <>
+            {/* Summary Stats */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Summary Statistics</h2>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                  <div className="text-3xl font-bold text-primary-600">{progressData.summary.totalMeals || 0}</div>
+                  <div className="text-sm text-gray-600 mt-1">Meals Logged</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                  <div className="text-3xl font-bold text-primary-600">{progressData.summary.totalWorkouts || 0}</div>
+                  <div className="text-sm text-gray-600 mt-1">Workouts Completed</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                  <div className="text-3xl font-bold text-primary-600">{progressData.summary.avgCalories || 0}</div>
+                  <div className="text-sm text-gray-600 mt-1">Avg Daily Calories</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                  <div className="text-3xl font-bold text-primary-600">{timeRange}</div>
+                  <div className="text-sm text-gray-600 mt-1">Days Tracked</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Calorie Data */}
+            {progressData.dailyCalories && progressData.dailyCalories.length > 0 && (
+              <div className="mb-8 page-break-inside-avoid">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Daily Calorie Intake</h2>
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-primary-50">
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">Date</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-semibold text-gray-900">Calories</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {progressData.dailyCalories.map((item: any, idx: number) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right font-semibold">{item.calories}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Daily Workout Data */}
+            {progressData.dailyWorkouts && progressData.dailyWorkouts.length > 0 && (
+              <div className="mb-8 page-break-inside-avoid">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Daily Workout Frequency</h2>
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-primary-50">
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">Date</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-semibold text-gray-900">Workout Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {progressData.dailyWorkouts.map((item: any, idx: number) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right font-semibold">{item.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Food Category Breakdown - Print-Friendly Chart */}
+            {progressData.foodCategories && progressData.foodCategories.length > 0 && (
+              <div className="mb-6 page-break-inside-avoid">
+                <h2 className="text-xl font-bold text-gray-900 mb-3">Food Category Breakdown</h2>
+                <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-300">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-gray-400">
+                        <th className="text-left py-2 px-2 font-bold text-gray-900 text-sm">Category</th>
+                        <th className="text-center py-2 px-2 font-bold text-gray-900 text-sm">Distribution</th>
+                        <th className="text-right py-2 px-2 font-bold text-gray-900 text-sm">Count</th>
+                        <th className="text-right py-2 px-2 font-bold text-gray-900 text-sm">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {progressData.foodCategories.map((item: any, idx: number) => {
+                        const total = progressData.foodCategories.reduce((sum: number, cat: any) => sum + cat.value, 0);
+                        const percentage = ((item.value / total) * 100).toFixed(1);
+                        const barWidth = Math.round((item.value / total) * 15); // 15 blocks max
+                        const blocks = '█'.repeat(barWidth) + '░'.repeat(15 - barWidth);
+                        
+                        return (
+                          <tr key={idx} className="border-b border-gray-300">
+                            <td className="py-2 px-2 font-semibold text-gray-900 text-sm">{item.name}</td>
+                            <td className="py-2 px-2 text-center font-mono text-xs" style={{ letterSpacing: '-1px' }}>
+                              <span style={{ color: COLORS[idx % COLORS.length] }}>{blocks}</span>
+                            </td>
+                            <td className="py-2 px-2 text-right font-semibold text-gray-900 text-sm">{item.value}</td>
+                            <td className="py-2 px-2 text-right font-bold text-primary-600 text-sm">{percentage}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 pt-3 border-t-2 border-gray-400">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-gray-900 text-sm">Total Items:</span>
+                      <span className="font-bold text-lg text-primary-600">
+                        {progressData.foodCategories.reduce((sum: number, cat: any) => sum + cat.value, 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Insights */}
+            {progressData.summary.totalMeals > 0 && (
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-3">Key Insights</h2>
+                <div className="space-y-2">
+                  {progressData.summary.avgCalories > 0 && (
+                    <div className="flex items-start bg-primary-50 rounded-lg p-3 border border-primary-200">
+                      <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold text-gray-900 text-sm">Average Daily Calorie Intake</div>
+                        <div className="text-gray-700 mt-1 text-sm">
+                          {progressData.summary.avgCalories} calories per day over the last {timeRange} days
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Print Footer */}
+      </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-auto">
+      <footer className="bg-gray-900 text-white mt-auto print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Brand */}
@@ -444,7 +739,7 @@ export default function Progress() {
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">

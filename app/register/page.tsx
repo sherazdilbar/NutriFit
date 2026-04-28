@@ -15,20 +15,136 @@ export default function Register() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    label: '',
+    color: '',
+  });
+
+  const validateName = (name: string) => {
+    if (!name) return 'Name is required';
+    if (name.length < 2) return 'Name must be at least 2 characters';
+    return '';
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return 'Email is required';
+    if (!emailRegex.test(email)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const checkPasswordStrength = (password: string) => {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^a-zA-Z\d]/.test(password)) score++;
+
+    if (score === 0 || score === 1) {
+      return { score, label: 'Weak', color: 'bg-red-500' };
+    } else if (score === 2 || score === 3) {
+      return { score, label: 'Medium', color: 'bg-yellow-500' };
+    } else {
+      return { score, label: 'Strong', color: 'bg-green-500' };
+    }
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return '';
+  };
+
+  const validateConfirmPassword = (confirmPassword: string, password: string) => {
+    if (!confirmPassword) return 'Please confirm your password';
+    if (confirmPassword !== password) return 'Passwords do not match';
+    return '';
+  };
+
+  const checkEmailExists = async (email: string) => {
+    if (!email || validationErrors.email) return;
+    
+    try {
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (data.exists) {
+        setValidationErrors(prev => ({
+          ...prev,
+          email: 'This email is already registered. Please login instead.',
+        }));
+      }
+    } catch (error) {
+      // Silently fail - not critical
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+
+    // Real-time validation
+    let error = '';
+    if (name === 'name') {
+      error = validateName(value);
+    } else if (name === 'email') {
+      error = validateEmail(value);
+      if (!error && value) {
+        // Debounce email check
+        setTimeout(() => checkEmailExists(value), 500);
+      }
+    } else if (name === 'password') {
+      error = validatePassword(value);
+      setPasswordStrength(checkPasswordStrength(value));
+      // Revalidate confirm password if it exists
+      if (formData.confirmPassword) {
+        setValidationErrors(prev => ({
+          ...prev,
+          confirmPassword: validateConfirmPassword(formData.confirmPassword, value),
+        }));
+      }
+    } else if (name === 'confirmPassword') {
+      error = validateConfirmPassword(value, formData.password);
+    }
+
+    setValidationErrors({
+      ...validationErrors,
+      [name]: error,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+    // Validate all fields before submit
+    const nameError = validateName(formData.name);
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    const confirmPasswordError = validateConfirmPassword(formData.confirmPassword, formData.password);
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (nameError || emailError || passwordError || confirmPasswordError) {
+      setValidationErrors({
+        name: nameError,
+        email: emailError,
+        password: passwordError,
+        confirmPassword: confirmPasswordError,
+      });
       return;
     }
 
@@ -72,13 +188,6 @@ export default function Register() {
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
   };
 
   return (
@@ -259,6 +368,35 @@ export default function Register() {
                   placeholder="••••••••"
                 />
               </div>
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600">Password Strength:</span>
+                    <span className={`text-xs font-semibold ${
+                      passwordStrength.label === 'Weak' ? 'text-red-600' :
+                      passwordStrength.label === 'Medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-1.5 flex-1 rounded-full transition-all ${
+                          level <= passwordStrength.score
+                            ? passwordStrength.color
+                            : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <p className="text-xs text-gray-500 mt-1.5">Must be at least 6 characters</p>
             </div>
 

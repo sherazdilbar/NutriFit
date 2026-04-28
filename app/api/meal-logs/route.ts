@@ -88,7 +88,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot log meals for future dates' }, { status: 400 });
     }
 
-    // Validation 3: Check each meal has valid data
+    // Validation 3: Check each meal has valid data and fetch categories
+    const mealsWithCategories = [];
     for (const meal of meals) {
       if (!meal.name || typeof meal.name !== 'string') {
         return NextResponse.json({ error: 'Each meal must have a valid name' }, { status: 400 });
@@ -101,6 +102,23 @@ export async function POST(request: NextRequest) {
       if (meal.quantity && (typeof meal.quantity !== 'number' || meal.quantity <= 0)) {
         return NextResponse.json({ error: 'Quantity must be a positive number' }, { status: 400 });
       }
+
+      // Fetch category from FoodItem if foodId is provided
+      let category = meal.category || 'Other';
+      if (meal.foodId) {
+        const foodItem = await prisma.foodItem.findUnique({
+          where: { id: meal.foodId },
+          select: { category: true },
+        });
+        if (foodItem && foodItem.category) {
+          category = foodItem.category;
+        }
+      }
+
+      mealsWithCategories.push({
+        ...meal,
+        category,
+      });
     }
 
     // Validation 4: Check for duplicate logging (same meals within 1 hour)
@@ -139,7 +157,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         date: logDate,
-        meals: JSON.stringify(meals),
+        meals: JSON.stringify(mealsWithCategories),
       },
     });
 

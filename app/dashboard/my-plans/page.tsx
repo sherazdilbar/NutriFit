@@ -28,6 +28,8 @@ export default function MyPlans() {
   const [dietPlans, setDietPlans] = useState<DietPlan[]>([]);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [activeTab, setActiveTab] = useState<'diet' | 'workout'>('diet');
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -150,6 +152,16 @@ export default function MyPlans() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleViewDetails = (plan: any, type: 'diet' | 'workout') => {
+    setSelectedPlan({ ...plan, type });
+    setShowModal(true);
+  };
+
+  const handlePrintPlan = (plan: any, type: 'diet' | 'workout') => {
+    setSelectedPlan({ ...plan, type });
+    setTimeout(() => window.print(), 100);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -164,7 +176,7 @@ export default function MyPlans() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/dashboard" className="flex items-center">
@@ -228,7 +240,7 @@ export default function MyPlans() {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 print:hidden">
         {/* Breadcrumb */}
         <div className="mb-6">
           <Link 
@@ -297,64 +309,71 @@ export default function MyPlans() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {dietPlans.map((plan) => (
-                  <div key={plan.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:border-primary-300 hover:shadow-sm transition-all">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900 mb-1">
-                          {plan.metadata?.days || 7}-Day Plan
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(plan.createdAt)}
+                  <div key={plan.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all">
+                    {/* Card Header - Always Visible */}
+                    <div className="p-5">
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                            {plan.metadata?.days || 7}-Day Plan
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(plan.createdAt)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteDietPlan(plan.id)}
+                          className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Calorie Badge */}
+                      <div className="bg-primary-50 px-3 py-2 rounded-lg border border-primary-100 mb-3">
+                        <p className="text-sm font-semibold text-primary-700 text-center">
+                          {plan.calories} cal/day
+                        </p>
+                        <p className="text-xs text-primary-600 text-center capitalize">
+                          {plan.goal || 'Maintain'}
                         </p>
                       </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.plan?.length || 0}</p>
+                          <p className="text-xs text-gray-600">Meals</p>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.metadata?.accuracy || 0}%</p>
+                          <p className="text-xs text-gray-600">Match</p>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.metadata?.safeFoodsCount || 0}</p>
+                          <p className="text-xs text-gray-600">Foods</p>
+                        </div>
+                      </div>
+
+                      {/* View Details Button */}
                       <button
-                        onClick={() => handleDeleteDietPlan(plan.id)}
-                        className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                        onClick={() => handleViewDetails(plan, 'diet')}
+                        className="w-full bg-primary-50 text-primary-700 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors border border-primary-200 mb-3 flex items-center justify-center"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        View Details
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </button>
-                    </div>
 
-                    {/* Calorie Badge */}
-                    <div className="bg-primary-50 px-3 py-2 rounded-lg border border-primary-100 mb-3">
-                      <p className="text-sm font-semibold text-primary-700 text-center">
-                        {plan.calories} cal/day
-                      </p>
-                      <p className="text-xs text-primary-600 text-center capitalize">
-                        {plan.goal || 'Maintain'}
-                      </p>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.plan?.length || 0}</p>
-                        <p className="text-xs text-gray-600">Meals</p>
-                      </div>
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.metadata?.accuracy || 0}%</p>
-                        <p className="text-xs text-gray-600">Match</p>
-                      </div>
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.metadata?.safeFoodsCount || 0}</p>
-                        <p className="text-xs text-gray-600">Foods</p>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => window.print()}
-                        className="flex-1 bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-200"
-                      >
-                        Print
-                      </button>
+                      {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteDietPlan(plan.id)}
-                        className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200"
+                        className="w-full bg-red-50 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200"
                       >
                         Delete
                       </button>
@@ -391,61 +410,68 @@ export default function MyPlans() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {workoutPlans.map((plan) => (
-                  <div key={plan.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:border-primary-300 hover:shadow-sm transition-all">
-                    {/* Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900 mb-1">
-                          {plan.metadata?.days || 7}-Day Plan
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(plan.createdAt)}
+                  <div key={plan.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-primary-300 hover:shadow-sm transition-all">
+                    {/* Card Header - Always Visible */}
+                    <div className="p-5">
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                            {plan.metadata?.days || 7}-Day Plan
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(plan.createdAt)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteWorkoutPlan(plan.id)}
+                          className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Focus Badge */}
+                      <div className="bg-primary-50 px-3 py-2 rounded-lg border border-primary-100 mb-3">
+                        <p className="text-sm font-semibold text-primary-700 text-center capitalize">
+                          {plan.focusArea || plan.intensity}
                         </p>
                       </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.metadata?.totalWorkouts || 0}</p>
+                          <p className="text-xs text-gray-600">Workouts</p>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.metadata?.days || 0}</p>
+                          <p className="text-xs text-gray-600">Days</p>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
+                          <p className="text-lg font-bold text-gray-900">{plan.metadata?.safeExercisesCount || 0}</p>
+                          <p className="text-xs text-gray-600">Exercises</p>
+                        </div>
+                      </div>
+
+                      {/* View Details Button */}
                       <button
-                        onClick={() => handleDeleteWorkoutPlan(plan.id)}
-                        className="text-gray-400 hover:text-red-600 transition-colors ml-2"
+                        onClick={() => handleViewDetails(plan, 'workout')}
+                        className="w-full bg-primary-50 text-primary-700 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors border border-primary-200 mb-3 flex items-center justify-center"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        View Details
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </button>
-                    </div>
 
-                    {/* Focus Badge */}
-                    <div className="bg-primary-50 px-3 py-2 rounded-lg border border-primary-100 mb-3">
-                      <p className="text-sm font-semibold text-primary-700 text-center capitalize">
-                        {plan.focusArea || plan.intensity}
-                      </p>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.metadata?.totalWorkouts || 0}</p>
-                        <p className="text-xs text-gray-600">Workouts</p>
-                      </div>
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.metadata?.days || 0}</p>
-                        <p className="text-xs text-gray-600">Days</p>
-                      </div>
-                      <div className="bg-gray-50 rounded p-2 text-center border border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">{plan.metadata?.safeExercisesCount || 0}</p>
-                        <p className="text-xs text-gray-600">Exercises</p>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => window.print()}
-                        className="flex-1 bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors border border-gray-200"
-                      >
-                        Print
-                      </button>
+                      {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteWorkoutPlan(plan.id)}
-                        className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200"
+                        className="w-full bg-red-50 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200"
                       >
                         Delete
                       </button>
@@ -461,8 +487,260 @@ export default function MyPlans() {
       {/* Spacer before footer */}
       <div className="pb-8"></div>
 
+      {/* Details Modal */}
+      {showModal && selectedPlan && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedPlan.type === 'diet' ? 'Diet Plan Details' : 'Workout Plan Details'}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {formatDate(selectedPlan.createdAt)}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {selectedPlan.type === 'diet' ? (
+                <div className="space-y-4">
+                  {selectedPlan.plan?.map((meal: any, idx: number) => (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{meal.meal}</h3>
+                          <p className="text-sm text-gray-600">{meal.time}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary-700 bg-primary-50 px-3 py-1 rounded-lg">
+                          {meal.totalCalories} cal
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {meal.foods?.map((food: any, foodIdx: number) => (
+                          <div key={foodIdx} className="flex justify-between items-center bg-white rounded p-3">
+                            <div>
+                              <p className="font-medium text-gray-900">{food.name}</p>
+                              <p className="text-sm text-gray-600">{food.serving}</p>
+                            </div>
+                            <span className="text-gray-900 font-semibold">{food.calories} cal</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedPlan.plan?.map((workout: any, idx: number) => (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{workout.day}</h3>
+                          <p className="text-sm text-gray-600">{workout.focus}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary-700 bg-primary-50 px-3 py-1 rounded-lg capitalize">
+                          {workout.intensity || selectedPlan.intensity}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {workout.exercises?.map((exercise: any, exIdx: number) => (
+                          <div key={exIdx} className="flex justify-between items-center bg-white rounded p-3">
+                            <div>
+                              <p className="font-medium text-gray-900">{exercise.name}</p>
+                              <p className="text-sm text-gray-600">{exercise.sets} sets × {exercise.reps} reps</p>
+                            </div>
+                            <span className="text-gray-900 font-semibold">{exercise.duration || '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  handlePrintPlan(selectedPlan, selectedPlan.type);
+                }}
+                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+              >
+                Print Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print View - Hidden on screen, visible only when printing */}
+      {selectedPlan && (
+        <div className="hidden print:block">
+          {/* Print Header with Branding */}
+          <div className="mb-8 text-center border-b-2 border-primary-600 pb-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-white border-2 border-primary-600 rounded-xl flex items-center justify-center">
+                <span className="text-primary-600 font-bold text-3xl">N</span>
+              </div>
+              <span className="ml-4 text-4xl font-bold text-gray-900">
+                Nutri<span className="text-primary-600">Fit</span>
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {selectedPlan.type === 'diet' ? 'Diet Plan' : 'Workout Plan'}
+            </h1>
+            <p className="text-gray-600">Generated on {formatDate(selectedPlan.createdAt)}</p>
+          </div>
+
+          {/* Print Content */}
+          {selectedPlan.type === 'diet' ? (
+            <div>
+              {/* Plan Summary */}
+              <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600">{selectedPlan.calories}</p>
+                    <p className="text-sm text-gray-600">Calories/Day</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600">{selectedPlan.metadata?.days || 7}</p>
+                    <p className="text-sm text-gray-600">Days</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600 capitalize">{selectedPlan.goal || 'Maintain'}</p>
+                    <p className="text-sm text-gray-600">Goal</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meals */}
+              <div className="space-y-6">
+                {selectedPlan.plan?.map((meal: any, idx: number) => (
+                  <div key={idx} className="page-break-inside-avoid">
+                    <div className="bg-primary-50 p-3 rounded-t-lg border border-primary-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">{meal.meal}</h3>
+                          <p className="text-sm text-gray-600">{meal.time}</p>
+                        </div>
+                        <span className="text-lg font-bold text-primary-700">{meal.totalCalories} cal</span>
+                      </div>
+                    </div>
+                    <div className="border border-t-0 border-gray-200 rounded-b-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Food Item</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Serving</th>
+                            <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Calories</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {meal.foods?.map((food: any, foodIdx: number) => (
+                            <tr key={foodIdx} className="border-t border-gray-200">
+                              <td className="px-4 py-2 text-sm text-gray-900">{food.name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-600">{food.serving}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900 text-right font-semibold">{food.calories}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* Plan Summary */}
+              <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600">{selectedPlan.metadata?.days || 7}</p>
+                    <p className="text-sm text-gray-600">Days</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600 capitalize">{selectedPlan.intensity}</p>
+                    <p className="text-sm text-gray-600">Intensity</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-primary-600">{selectedPlan.metadata?.totalWorkouts || 0}</p>
+                    <p className="text-sm text-gray-600">Workouts</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Workouts */}
+              <div className="space-y-6">
+                {selectedPlan.plan?.map((workout: any, idx: number) => (
+                  <div key={idx} className="page-break-inside-avoid">
+                    <div className="bg-primary-50 p-3 rounded-t-lg border border-primary-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">{workout.day}</h3>
+                          <p className="text-sm text-gray-600">{workout.focus}</p>
+                        </div>
+                        <span className="text-sm font-bold text-primary-700 capitalize">{workout.intensity || selectedPlan.intensity}</span>
+                      </div>
+                    </div>
+                    <div className="border border-t-0 border-gray-200 rounded-b-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Exercise</th>
+                            <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Sets × Reps</th>
+                            <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {workout.exercises?.map((exercise: any, exIdx: number) => (
+                            <tr key={exIdx} className="border-t border-gray-200">
+                              <td className="px-4 py-2 text-sm text-gray-900">{exercise.name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-600 text-center">{exercise.sets} × {exercise.reps}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900 text-right font-semibold">{exercise.duration || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Print Footer */}
+          <div className="mt-8 pt-6 border-t-2 border-gray-200 text-center text-sm text-gray-600">
+            <p>Generated by <span className="font-semibold text-primary-600">NutriFit</span> - Your Health & Fitness Companion</p>
+            <p className="mt-1">For more information, visit nutrifit.com</p>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer before footer */}
+      <div className="pb-8 print:hidden"></div>
+
       {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-auto">
+      <footer className="bg-gray-900 text-white mt-auto print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Brand */}
@@ -486,7 +764,7 @@ export default function MyPlans() {
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">

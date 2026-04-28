@@ -88,6 +88,41 @@ export default function DietPlanGenerator() {
     }
   };
 
+  const exportToCSV = () => {
+    if (!generatedPlan || !metadata) return;
+
+    let csvContent = 'NutriFit Diet Plan\n\n';
+    csvContent += `Duration: ${metadata.days} Days\n`;
+    csvContent += `Daily Target Calories: ${metadata.targetCalories}\n`;
+    csvContent += `Actual Calories: ${metadata.actualCalories}\n`;
+    csvContent += `Accuracy: ${metadata.accuracy}%\n`;
+    if (metadata.excludedAllergens && metadata.excludedAllergens.length > 0 && metadata.excludedAllergens[0] !== 'None') {
+      csvContent += `Excluded Allergens: ${metadata.excludedAllergens.join(', ')}\n`;
+    }
+    csvContent += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+
+    csvContent += 'DAILY MEAL PLAN\n\n';
+
+    generatedPlan.forEach((meal) => {
+      csvContent += `${meal.meal} (${meal.time}) - ${meal.totalCalories} calories\n`;
+      csvContent += 'Food,Serving,Calories\n';
+      meal.foods.forEach((food) => {
+        csvContent += `"${food.name}","${food.serving}",${food.calories}\n`;
+      });
+      csvContent += '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `nutrifit-diet-plan-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navigation */}
@@ -381,7 +416,7 @@ export default function DietPlanGenerator() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 print:hidden">
               <button
                 onClick={() => {
                   setGeneratedPlan(null);
@@ -390,6 +425,15 @@ export default function DietPlanGenerator() {
                 className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-200"
               >
                 Generate New Plan
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
               </button>
               <button
                 onClick={() => window.print()}
@@ -433,7 +477,7 @@ export default function DietPlanGenerator() {
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
                 <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors">
