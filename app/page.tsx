@@ -129,19 +129,28 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero Image/Stats */}
+          {/* Hero Image/Stats - 3 Simple Steps */}
           <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-3xl p-8 shadow-xl text-center hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-bold text-primary-600 mb-2">1000+</div>
-              <div className="text-gray-600 font-medium">Healthy Recipes</div>
+              <div className="w-16 h-16 bg-white border-4 border-primary-600 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                1
+              </div>
+              <div className="text-xl font-bold text-gray-900 mb-2">Create Profile</div>
+              <div className="text-gray-600">Enter your health info, allergies, and fitness goals</div>
             </div>
             <div className="bg-white rounded-3xl p-8 shadow-xl text-center hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-bold text-primary-600 mb-2">500+</div>
-              <div className="text-gray-600 font-medium">Exercise Plans</div>
+              <div className="w-16 h-16 bg-white border-4 border-primary-600 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                2
+              </div>
+              <div className="text-xl font-bold text-gray-900 mb-2">Get Your Plan</div>
+              <div className="text-gray-600">Receive personalized diet and workout recommendations</div>
             </div>
             <div className="bg-white rounded-3xl p-8 shadow-xl text-center hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-bold text-primary-600 mb-2">24/7</div>
-              <div className="text-gray-600 font-medium">Health Tracking</div>
+              <div className="w-16 h-16 bg-white border-4 border-primary-600 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                3
+              </div>
+              <div className="text-xl font-bold text-gray-900 mb-2">Track Progress</div>
+              <div className="text-gray-600">Log meals, exercises, and monitor your health journey</div>
             </div>
           </div>
         </div>

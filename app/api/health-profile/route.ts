@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = payload.userId as number;
-    const { age, weight, height, permissions, diseases, allergens } = await request.json();
+    const { age, weight, height, gender, activityLevel, healthGoals, permissions, diseases, allergens } = await request.json();
 
     // Validate input
     if (!age || !weight || !height) {
@@ -126,6 +126,9 @@ export async function POST(request: NextRequest) {
         age: parseInt(age),
         weight: parseFloat(weight),
         height: parseFloat(height),
+        gender: gender || 'male',
+        activityLevel: activityLevel || 'moderate',
+        healthGoals: healthGoals || 'maintain',
         permissions: permissions || null,
         diseases: diseases ? JSON.stringify(diseases) : null,
         allergens: allergens ? JSON.stringify(allergens) : null,
@@ -167,7 +170,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const userId = payload.userId as number;
-    const { age, weight, height, permissions, diseases, allergens } = await request.json();
+    const { age, weight, height, gender, activityLevel, healthGoals, permissions, diseases, allergens } = await request.json();
 
     // Validate input
     if (age && (age < 1 || age > 150)) {
@@ -198,6 +201,9 @@ export async function PUT(request: NextRequest) {
         ...(age && { age: parseInt(age) }),
         ...(weight && { weight: parseFloat(weight) }),
         ...(height && { height: parseFloat(height) }),
+        ...(gender && { gender }),
+        ...(activityLevel && { activityLevel }),
+        ...(healthGoals && { healthGoals }),
         permissions: permissions || null,
         diseases: diseases ? JSON.stringify(diseases) : null,
         allergens: allergens ? JSON.stringify(allergens) : null,

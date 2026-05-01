@@ -9,6 +9,9 @@ interface HealthProfile {
   age: number;
   weight: number;
   height: number;
+  gender: string;
+  activityLevel: string;
+  healthGoals: string;
   permissions: string | null;
   diseases: string[];
   allergens: string[];
@@ -229,7 +232,19 @@ export default function ViewHealthProfile() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-600">Gender</span>
+              <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 capitalize">{profile.gender}</p>
+          </div>
+
           <div className="bg-white rounded-lg border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-600">Age</span>
@@ -285,6 +300,41 @@ export default function ViewHealthProfile() {
 
         {/* Details Section */}
         <div className="space-y-5">
+          {/* Activity Level & Health Goals */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">Activity Level</h3>
+                  <p className="text-sm text-gray-700 capitalize">{profile.activityLevel.replace('_', ' ')}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start">
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">Health Goal</h3>
+                  <p className="text-sm text-gray-700 capitalize">
+                    {profile.healthGoals === 'lose' ? 'Lose Weight' : 
+                     profile.healthGoals === 'gain' ? 'Gain Weight' : 
+                     'Maintain Weight'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Health Goals */}
           {profile.permissions && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -295,7 +345,7 @@ export default function ViewHealthProfile() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base font-semibold text-gray-900 mb-2">Health Goals</h3>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">Additional Goals & Notes</h3>
                   <p className="text-sm text-gray-700 leading-relaxed">{profile.permissions}</p>
                 </div>
               </div>

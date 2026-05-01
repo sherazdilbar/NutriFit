@@ -26,6 +26,9 @@ export default function HealthProfilePage() {
     age: '',
     weight: '',
     height: '',
+    gender: 'male',
+    activityLevel: 'moderate',
+    healthGoals: 'maintain',
     permissions: '',
     diseases: [] as string[],
     allergens: [] as string[],
@@ -76,6 +79,9 @@ export default function HealthProfilePage() {
           age: data.profile.age.toString(),
           weight: data.profile.weight.toString(),
           height: data.profile.height?.toString() || '170',
+          gender: data.profile.gender || 'male',
+          activityLevel: data.profile.activityLevel || 'moderate',
+          healthGoals: data.profile.healthGoals || 'maintain',
           permissions: data.profile.permissions || '',
           diseases: data.profile.diseases || [],
           allergens: data.profile.allergens || [],
@@ -301,9 +307,62 @@ export default function HealthProfilePage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Basic Metrics Section */}
+          {/* Basic Information Section */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Metrics</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+            
+            {/* Gender Selection */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Gender</label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'male' })}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    formData.gender === 'male'
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      formData.gender === 'male' ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}>
+                      <svg className={`w-6 h-6 ${formData.gender === 'male' ? 'text-white' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <span className={`font-medium ${formData.gender === 'male' ? 'text-primary-700' : 'text-gray-700'}`}>
+                      Male
+                    </span>
+                  </div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: 'female' })}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    formData.gender === 'female'
+                      ? 'border-primary-600 bg-primary-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      formData.gender === 'female' ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}>
+                      <svg className={`w-6 h-6 ${formData.gender === 'female' ? 'text-white' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <span className={`font-medium ${formData.gender === 'female' ? 'text-primary-700' : 'text-gray-700'}`}>
+                      Female
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-primary-300 transition-colors">
                 <div className="flex items-center justify-between mb-4">
@@ -386,7 +445,46 @@ export default function HealthProfilePage() {
             </div>
           </div>
 
-          {/* Health Goals Section */}
+          {/* Activity Level & Health Goals */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity & Goals</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+              {/* Activity Level */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Activity Level</label>
+                <select
+                  name="activityLevel"
+                  value={formData.activityLevel}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-colors text-gray-900"
+                >
+                  <option value="sedentary">Sedentary (Little or no exercise)</option>
+                  <option value="light">Light (Exercise 1-3 days/week)</option>
+                  <option value="moderate">Moderate (Exercise 3-5 days/week)</option>
+                  <option value="active">Active (Exercise 6-7 days/week)</option>
+                  <option value="very_active">Very Active (Hard exercise daily)</option>
+                </select>
+              </div>
+
+              {/* Health Goals */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Health Goal</label>
+                <select
+                  name="healthGoals"
+                  value={formData.healthGoals}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-colors text-gray-900"
+                >
+                  <option value="lose">Lose Weight</option>
+                  <option value="maintain">Maintain Weight</option>
+                  <option value="gain">Gain Weight</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Health Goals Description Section */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Health Goals</h2>
             <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -398,7 +496,7 @@ export default function HealthProfilePage() {
                 </div>
                 <div className="flex-1">
                   <label htmlFor="permissions" className="block text-sm font-medium text-gray-700 mb-2">
-                    What are your health and fitness goals?
+                    Additional health and fitness goals or notes
                   </label>
                   <textarea
                     id="permissions"

@@ -98,6 +98,26 @@ The application uses SQLite with the following main models:
 - FoodItem
 - ExerciseItem
 
+## Testing
+
+The application includes 10 test cases covering all major features:
+
+- TC-01: User Registration
+- TC-02: User Login
+- TC-03: Wrong Password Handling
+- TC-04: Health Profile Creation
+- TC-05: Meal Logging
+- TC-06: Exercise Logging
+- TC-07: Diet Plan Generation
+- TC-08: Workout Plan Generation
+- TC-09: Water Intake Tracking
+- TC-10: Progress Visualization
+
+Run tests with:
+```bash
+npm test
+```
+
 ## License
 
 MIT

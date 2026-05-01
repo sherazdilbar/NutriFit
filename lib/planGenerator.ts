@@ -36,13 +36,16 @@ interface WorkoutPlanExercise {
   totalDuration: string;
 }
 
+/**
+ * Generates personalized diet plan based on user profile and calorie targets
+ * Filters foods based on allergens and distributes meals throughout the day
+ */
 export function generateDietPlan(
   foods: FoodItem[],
   profile: HealthProfile,
   targetCalories: number,
   days: number = 7
 ): { plan: DietPlanMeal[]; metadata: any } {
-  // Filter out allergenic foods
   const safeFoods = foods.filter(food => {
     if (!profile.allergens || profile.allergens.length === 0 || profile.allergens[0] === 'None') {
       return true;
@@ -53,7 +56,6 @@ export function generateDietPlan(
     return conflicts.length === 0;
   });
 
-  // Categorize foods
   const fruits = safeFoods.filter(f => 
     ['apple', 'banana', 'orange', 'strawberr', 'blueberr', 'mango', 'grape', 'watermelon'].some(fruit => 
       f.name.toLowerCase().includes(fruit)
@@ -84,7 +86,6 @@ export function generateDietPlan(
     )
   );
 
-  // Meal distribution (Breakfast: 25%, Lunch: 35%, Dinner: 30%, Snacks: 10%)
   const breakfastCal = Math.round(targetCalories * 0.25);
   const lunchCal = Math.round(targetCalories * 0.35);
   const dinnerCal = Math.round(targetCalories * 0.30);
@@ -92,7 +93,6 @@ export function generateDietPlan(
 
   const plan: DietPlanMeal[] = [];
 
-  // Generate breakfast
   const breakfastFoods = selectFoodsForMeal(
     [...fruits, ...grains, ...proteins.filter(p => p.name.includes('Egg') || p.name.includes('Yogurt'))],
     breakfastCal,
@@ -106,7 +106,6 @@ export function generateDietPlan(
     totalCalories: breakfastFoods.reduce((sum, f) => sum + f.calories, 0),
   });
 
-  // Generate lunch
   const lunchFoods = selectFoodsForMeal(
     [...proteins, ...grains, ...vegetables],
     lunchCal,
@@ -120,7 +119,6 @@ export function generateDietPlan(
     totalCalories: lunchFoods.reduce((sum, f) => sum + f.calories, 0),
   });
 
-  // Generate dinner
   const dinnerFoods = selectFoodsForMeal(
     [...proteins, ...vegetables, ...grains],
     dinnerCal,
@@ -134,7 +132,6 @@ export function generateDietPlan(
     totalCalories: dinnerFoods.reduce((sum, f) => sum + f.calories, 0),
   });
 
-  // Generate snacks
   if (snacks.length > 0) {
     const snackFoods = selectFoodsForMeal([...snacks, ...fruits], snackCal, 2, 'snack');
     plan.push({
@@ -169,10 +166,8 @@ function selectFoodsForMeal(
   const selected: Array<{ name: string; serving: string; calories: number }> = [];
   let remainingCalories = targetCalories;
 
-  // Shuffle foods for variety
   const shuffled = [...availableFoods].sort(() => Math.random() - 0.5);
 
-  // Ensure balanced meal composition based on meal type
   let needsProtein = mealType !== 'snack';
   let needsCarb = true;
   let needsVegetable = mealType === 'lunch' || mealType === 'dinner';
@@ -182,12 +177,10 @@ function selectFoodsForMeal(
     
     const foodName = food.name.toLowerCase();
     
-    // Check if this food fills a nutritional need
     const isProtein = ['chicken', 'salmon', 'tuna', 'beef', 'tofu', 'egg', 'yogurt', 'turkey'].some(p => foodName.includes(p));
     const isCarb = ['rice', 'oatmeal', 'quinoa', 'bread', 'pasta', 'potato'].some(c => foodName.includes(c));
     const isVegetable = ['broccoli', 'carrot', 'spinach', 'pepper', 'tomato', 'cucumber', 'lettuce', 'cauliflower'].some(v => foodName.includes(v));
     
-    // Prioritize foods that fill nutritional gaps
     const shouldAdd = (
       (needsProtein && isProtein) ||
       (needsCarb && isCarb) ||
@@ -195,7 +188,7 @@ function selectFoodsForMeal(
       (!needsProtein && !needsCarb && !needsVegetable)
     );
 
-    if (shouldAdd && food.calories <= remainingCalories * 1.3) { // Allow 30% margin
+    if (shouldAdd && food.calories <= remainingCalories * 1.3) {
       selected.push({
         name: food.name,
         serving: '1 serving',
@@ -203,20 +196,18 @@ function selectFoodsForMeal(
       });
       remainingCalories -= food.calories;
 
-      // Mark nutritional needs as fulfilled
       if (isProtein) needsProtein = false;
       if (isCarb) needsCarb = false;
       if (isVegetable) needsVegetable = false;
     }
 
-    if (remainingCalories <= 50) break; // Close enough
+    if (remainingCalories <= 50) break;
   }
 
-  // If we couldn't meet nutritional requirements, add any available foods
   if (selected.length < 2 && availableFoods.length > 0) {
     for (const food of shuffled) {
       if (selected.length >= maxItems) break;
-      if (selected.find(s => s.name === food.name)) continue; // Avoid duplicates
+      if (selected.find(s => s.name === food.name)) continue;
       
       if (food.calories <= remainingCalories * 1.5) {
         selected.push({
@@ -232,13 +223,16 @@ function selectFoodsForMeal(
   return selected;
 }
 
+/**
+ * Generates personalized workout plan based on user profile and health conditions
+ * Filters high-impact exercises for users with medical conditions
+ */
 export function generateWorkoutPlan(
   exercises: ExerciseItem[],
   profile: HealthProfile,
   days: number = 7,
   focusArea: 'cardio' | 'strength' | 'balanced' | 'flexibility' = 'balanced'
 ): { plan: WorkoutPlanExercise[]; metadata: any } {
-  // Filter exercises based on health conditions
   const safeExercises = exercises.filter(exercise => {
     if (!profile.diseases || profile.diseases.length === 0 || profile.diseases[0] === 'None') {
       return true;
@@ -247,7 +241,6 @@ export function generateWorkoutPlan(
     const riskyConditions = ['Arthritis', 'Heart Disease', 'Hypertension', 'Joint Problems'];
     const hasRisk = profile.diseases.some(d => riskyConditions.includes(d));
 
-    // If user has risky condition, exclude high-impact exercises
     if (hasRisk && exercise.impactLevel === 'High') {
       return false;
     }
@@ -255,7 +248,6 @@ export function generateWorkoutPlan(
     return true;
   });
 
-  // Categorize exercises
   const cardio = safeExercises.filter(e =>
     ['running', 'walking', 'cycling', 'swimming', 'jump', 'rowing', 'elliptical', 'stair'].some(c =>
       e.name.toLowerCase().includes(c)
