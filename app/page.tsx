@@ -25,22 +25,22 @@ export default function Home() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+            <div className="hidden md:flex items-center space-x-2 relative">
+              <a href="#features" className="text-gray-700 hover:text-primary-600 transition-colors font-medium absolute left-0">
                 Features
               </a>
-              <a href="#about" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+              <a href="#about" className="text-gray-700 hover:text-primary-600 transition-colors font-medium absolute left-12">
                 About
               </a>
               <Link
                 href="/login"
-                className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
+                className="text-gray-700 hover:text-primary-600 transition-colors font-medium absolute left-20"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="bg-primary-600 text-white px-6 py-2.5 rounded-full hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl font-medium"
+                className="bg-primary-600 text-white px-6 py-2.5 rounded-full hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl font-medium absolute left-24"
               >
                 Get Started
               </Link>
@@ -113,16 +113,16 @@ export default function Home() {
             <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               Track your meals, manage your health profile, and achieve your fitness goals with personalized diet and workout plans.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-1 justify-center items-center relative">
               <Link
                 href="/register"
-                className="bg-primary-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
+                className="bg-primary-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform absolute left-0"
               >
                 Start Your Journey
               </Link>
               <Link
                 href="/login"
-                className="bg-white text-primary-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-all shadow-lg border-2 border-primary-600"
+                className="bg-white text-primary-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-50 transition-all shadow-lg border-2 border-primary-600 absolute left-20"
               >
                 Sign In
               </Link>
@@ -130,7 +130,7 @@ export default function Home() {
           </div>
 
           {/* Hero Image/Stats - 3 Simple Steps */}
-          <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-96 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-3xl p-8 shadow-xl text-center hover:shadow-2xl transition-shadow">
               <div className="w-16 h-16 bg-white border-4 border-primary-600 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                 1

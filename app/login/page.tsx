@@ -354,7 +354,7 @@ function LoginForm() {
               disabled={loading}
               aria-busy={loading}
               aria-label={loading ? "Signing in, please wait" : "Sign in to your account"}
-              className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02]"
+              className="w-full bg-primary-600 text-white py-3.5 rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] relative z-10"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -371,7 +371,7 @@ function LoginForm() {
           </form>
 
           {/* Sign Up Link */}
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center relative -top-8">
             <p className="text-gray-600">
               Don't have an account?{' '}
               <Link href="/register" className="text-primary-600 font-semibold hover:text-primary-700 hover:underline">
